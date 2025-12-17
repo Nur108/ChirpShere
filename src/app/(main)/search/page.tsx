@@ -3,13 +3,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense, useEffect, useState } from 'react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Community, Post, User } from '@/lib/types';
-import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 function CommunityResult({ community }: { community: Community }) {
@@ -54,7 +54,7 @@ function UserResult({ user }: { user: User }) {
 }
 
 
-export default function SearchPage() {
+function SearchResults() {
   const searchParams = useSearchParams();
   const firestore = useFirestore();
   const q = searchParams.get('q') || '';
@@ -104,7 +104,7 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <>
       <header className="mb-6">
         <h1 className="text-2xl font-bold font-headline">Search results for &quot;{q}&quot;</h1>
       </header>
@@ -143,6 +143,16 @@ export default function SearchPage() {
           </Card>
         </TabsContent>
       </Tabs>
+    </>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Suspense fallback={<p>Loading...</p>}>
+        <SearchResults />
+      </Suspense>
     </div>
   );
 }

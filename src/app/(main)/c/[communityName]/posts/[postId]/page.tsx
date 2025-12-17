@@ -3,27 +3,46 @@ import { notFound } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import Link from 'next/link';
-import { doc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { VoteButtons } from '@/components/vote-buttons';
 import { CommentSection } from '@/components/comment-section';
 import { Link as LinkIcon } from 'lucide-react';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { Post } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { use } from 'react';
 
-export default function PostPage({ params }: { params: Promise<{ postId: string, communityName: string }> }) {
+export default function PostPage({ params }: { params: Promise<{ postId: string; communityName: string }> }) {
     const { postId, communityName } = use(params);
     const firestore = useFirestore();
+    const [post, setPost] = useState<Post | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const postRef = useMemoFirebase(
-      () => (firestore ? doc(firestore, 'posts', postId) : null),
-      [firestore, postId]
-    );
-    const { data: post, isLoading } = useDoc<Post>(postRef);
+    useEffect(() => {
+        if (!firestore || !postId) return;
+
+        const fetchPost = async () => {
+            try {
+                const docSnap = await getDoc(doc(firestore, 'posts', postId));
+                if (docSnap.exists()) {
+                    setPost({ ...docSnap.data() as Post, id: docSnap.id });
+                } else {
+                    setPost(null);
+                }
+            } catch (error) {
+                console.error('Error fetching post:', error);
+                setPost(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPost();
+    }, [firestore, postId]);
     
     if (isLoading) {
         return (
@@ -39,12 +58,7 @@ export default function PostPage({ params }: { params: Promise<{ postId: string,
         );
     }
 
-    if (!post) {
-        notFound();
-    }
-    
-    // This check ensures that the URL is canonical
-    if (post.communitySlug !== communityName) {
+    if (!post || post.communitySlug !== communityName) {
         notFound();
     }
     

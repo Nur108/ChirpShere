@@ -6,7 +6,7 @@ import { type Comment as CommentType } from '@/lib/types';
 import { CommentItem } from './comment-item';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { addDoc, collection, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
@@ -22,7 +22,7 @@ interface CommentWithReplies {
 
 export function CommentSection({ postId }: CommentSectionProps) {
   const firestore = useFirestore();
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
   
   const commentsQuery = useMemoFirebase(

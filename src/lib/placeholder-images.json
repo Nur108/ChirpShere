@@ -1,0 +1,82 @@
+{
+  "placeholderImages": [
+    {
+      "id": "user-avatar-1",
+      "description": "Avatar for user Alex",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjU5NzMyNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "Avatar for user Bella",
+      "imageUrl": "https://images.unsplash.com/photo-1592621385612-4d7129426394?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx3b21hbiUyMHNtaWxpbmd8ZW58MHx8fHwxNzY1OTYyNjcxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman smiling"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "Avatar for user Charlie",
+      "imageUrl": "https://images.unsplash.com/photo-1618077360395-f3068be8e001?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxtYW4lMjBnbGFzc2VzfGVufDB8fHx8MTc2NTkxNjQwMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man glasses"
+    },
+    {
+      "id": "user-avatar-4",
+      "description": "Avatar for user Dana",
+      "imageUrl": "https://images.unsplash.com/photo-1505731266723-9adc6eb6ea96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBoaWtpbmd8ZW58MHx8fHwxNzY1OTI3MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person hiking"
+    },
+    {
+      "id": "user-avatar-5",
+      "description": "Avatar for user Eli",
+      "imageUrl": "https://images.unsplash.com/photo-1595111633191-7a8c1b0f7f98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjByZWFkaW5nfGVufDB8fHx8MTc2NTkyOTUyMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person reading"
+    },
+    {
+      "id": "community-icon-1",
+      "description": "Icon for NextJS developers community",
+      "imageUrl": "https://images.unsplash.com/photo-1551033406-611cf9a28f67?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y29kZSUyMGFic3RyYWN0fGVufDB8fHx8MTc2NTk3NzUwNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "code abstract"
+    },
+    {
+      "id": "community-icon-2",
+      "description": "Icon for Graphic Design community",
+      "imageUrl": "https://images.unsplash.com/photo-1741464038360-036575046e70?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhcnQlMjBjb2xvcmZ1bHxlbnwwfHx8fDE3NjU5OTEyNjh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "art colorful"
+    },
+    {
+      "id": "community-icon-3",
+      "description": "Icon for Outdoor Adventures community",
+      "imageUrl": "https://images.unsplash.com/photo-1601281426795-9fedf41df8d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtb3VudGFpbiUyMGxhbmRzY2FwZXxlbnwwfHx8fDE3NjU5MzU0ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mountain landscape"
+    },
+    {
+      "id": "community-icon-4",
+      "description": "Icon for Culinary Creations community",
+      "imageUrl": "https://images.unsplash.com/photo-1765128331807-4a6cf08d5e5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxmb29kJTIwZGVsaWNpb3VzfGVufDB8fHx8MTc2NTk1NTkyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "food delicious"
+    },
+    {
+      "id": "community-icon-5",
+      "description": "Icon for Vintage Tech community",
+      "imageUrl": "https://images.unsplash.com/photo-1744472253649-d5dc843a8b34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjb21wdXRlciUyMHJldHJvfGVufDB8fHx8MTc2NTk5MTI2OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "computer retro"
+    },
+    {
+      "id": "post-image-1",
+      "description": "Image for a design post",
+      "imageUrl": "https://images.unsplash.com/photo-1739994886007-e9e5e069d064?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxkZXNpZ24lMjBpbGx1c3RyYXRpb258ZW58MHx8fHwxNzY1OTkxMjY4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "design illustration"
+    },
+    {
+      "id": "post-image-2",
+      "description": "Image for a hiking post",
+      "imageUrl": "https://images.unsplash.com/photo-1507139722691-cc2c94e3a2b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmb3Jlc3QlMjBwYXRofGVufDB8fHx8MTc2NTk2NTA2M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "forest path"
+    },
+    {
+      "id": "post-image-3",
+      "description": "Image for a tech post",
+      "imageUrl": "https://images.unsplash.com/photo-1562408590-e32931084e23?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaXJjdWl0JTIwYm9hcmR8ZW58MHx8fHwxNzY1OTE2Njk4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "circuit board"
+    }
+  ]
+}

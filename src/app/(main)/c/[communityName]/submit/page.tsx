@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { addDoc, collection, doc, getDocs, limit, query, serverTimestamp, where } from 'firebase/firestore';
+import Link from 'next/link';
+import { addDoc, collection, doc, getDocs, limit, query, serverTimestamp, where, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +33,7 @@ const formSchema = z.object({
     return true;
 }, {
     message: 'Please provide a valid URL for the selected post type.',
-    path: ['imageUrl'], // could be either, just need to point to one
+    path: ['imageUrl'],
 });
 
 type PostFormValues = z.infer<typeof formSchema>;
@@ -46,6 +47,8 @@ export default function SubmitPage({ params }: { params: Promise<{ communityName
   
   const [community, setCommunity] = useState<Community | null>(null);
   const [loadingCommunity, setLoadingCommunity] = useState(true);
+  const [isMember, setIsMember] = useState(false);
+  const [checkingMembership, setCheckingMembership] = useState(true);
 
   useEffect(() => {
     async function getCommunity() {
@@ -61,8 +64,17 @@ export default function SubmitPage({ params }: { params: Promise<{ communityName
             notFound();
         }
         const communityData = snapshot.docs[0].data() as Community;
-        setCommunity({ ...communityData, id: snapshot.docs[0].id });
+        const communityWithId = { ...communityData, id: snapshot.docs[0].id };
+        setCommunity(communityWithId);
+        
+        // Check if user is a member
+        if (user) {
+            const memberDoc = await getDoc(doc(firestore, 'communities', communityWithId.id, 'members', user.uid));
+            setIsMember(memberDoc.exists());
+        }
+        
         setLoadingCommunity(false);
+        setCheckingMembership(false);
     }
     if (firestore) {
       getCommunity();
@@ -116,7 +128,7 @@ export default function SubmitPage({ params }: { params: Promise<{ communityName
     }
   }
 
-  if (loadingCommunity || isUserLoading) {
+  if (loadingCommunity || isUserLoading || checkingMembership) {
     return (
         <div className="max-w-3xl mx-auto">
             <Skeleton className="h-96 w-full" />
@@ -127,6 +139,21 @@ export default function SubmitPage({ params }: { params: Promise<{ communityName
   if (!user) {
     router.push(`/login?redirect=/c/${communityName}/submit`);
     return null;
+  }
+  
+  if (!isMember) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardContent className="p-10 text-center">
+            <p className="text-muted-foreground mb-4">You must be a member of this community to create posts.</p>
+            <Button asChild>
+              <Link href={`/c/${communityName}`}>Join Community</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
   
   if (!community) {

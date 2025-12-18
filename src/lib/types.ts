@@ -67,14 +67,14 @@ export type ChatMessage = {
 export type ChatConversation = {
   id: string; // combination of user ids
   participants: string[];
-  // Denormalized from the other user's profile
-  userId: string;
-  userName: string;
-  userAvatar: string;
+  // Denormalized participant info (keyed by userId)
+  participantNames: Record<string, string>;
+  participantAvatars: Record<string, string>;
   // Last message info
   lastMessage: string;
   lastMessageTimestamp: Timestamp;
   lastMessageSenderId: string;
-  //
-  unreadCount: number;
+  // Unread counts per user (dynamic keys)
+  [key: `unreadCount_${string}`]: number;
+  createdAt: Timestamp;
 };

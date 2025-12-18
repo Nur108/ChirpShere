@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, setDoc, doc } from 'firebase/firestore';
 
 const formSchema = z.object({
   name: z.string()
@@ -43,7 +43,7 @@ export default function CreateCommunityPage() {
     
     try {
         const slug = values.name.toLowerCase();
-        await addDoc(collection(firestore, 'communities'), {
+        const communityRef = await addDoc(collection(firestore, 'communities'), {
             name: values.name,
             slug: slug,
             description: values.description,
@@ -51,6 +51,13 @@ export default function CreateCommunityPage() {
             createdAt: serverTimestamp(),
             memberCount: 1, // creator is the first member
             iconUrl: `https://picsum.photos/seed/${slug}/200/200`
+        });
+
+        // Add creator as first member
+        await setDoc(doc(firestore, 'communities', communityRef.id, 'members', user.uid), {
+            userId: user.uid,
+            userName: user.displayName || user.email,
+            joinedAt: serverTimestamp()
         });
 
         toast({

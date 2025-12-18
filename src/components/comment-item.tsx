@@ -10,12 +10,17 @@ import { VoteButtons } from './vote-buttons';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { useUser, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+
+interface CommentWithReplies {
+  comment: CommentType;
+  replies: CommentWithReplies[];
+}
 
 interface CommentItemProps {
   comment: CommentType;
-  replies: CommentItemProps[];
+  replies: CommentWithReplies[];
   postId: string;
 }
 
@@ -32,17 +37,22 @@ export function CommentItem({ comment, replies, postId }: CommentItemProps) {
     if (!firestore || !user || !replyContent.trim()) return;
 
     try {
-        await addDoc(collection(firestore, 'comments'), {
+        await addDoc(collection(firestore, 'posts', postId, 'comments'), {
             content: replyContent,
             authorId: user.uid,
             authorName: user.displayName || user.email,
             authorAvatarUrl: user.photoURL,
-            postId: postId,
             parentId: comment.id,
             createdAt: serverTimestamp(),
             upvotes: 0,
             downvotes: 0,
         });
+        
+        // Update post comment count
+        await updateDoc(doc(firestore, 'posts', postId), {
+            commentCount: increment(1)
+        });
+        
         setReplyContent('');
         setIsReplying(false);
         toast({ title: 'Reply posted!' });

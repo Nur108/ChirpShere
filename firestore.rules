@@ -1,8 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    // Users can read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null; // Allow reading other users for search
+    }
+    
+    // Chat conversations - only participants can access
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid in resource.data.participants);
+      allow create: if request.auth != null && 
+        request.auth.uid in request.resource.data.participants;
+        
+      // Messages within conversations
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+    
+    // Communities, posts, comments - allow all authenticated users
+    match /communities/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /posts/{document} {
+      allow read, write: if request.auth != null;
+    }
+    
+    match /comments/{document} {
+      allow read, write: if request.auth != null;
     }
   }
 }

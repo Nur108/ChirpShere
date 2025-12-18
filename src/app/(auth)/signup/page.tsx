@@ -9,7 +9,7 @@ import {
   updateProfile,
   getAuth,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, increment, writeBatch } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -83,13 +83,34 @@ export default function SignUpPage() {
         displayName: values.username,
       });
 
-      await setDoc(doc(firestore, 'users', firebaseUser.uid), {
+      // Create user and join general community atomically
+      const batch = writeBatch(firestore);
+      
+      // Create user document
+      const userRef = doc(firestore, 'users', firebaseUser.uid);
+      batch.set(userRef, {
         id: firebaseUser.uid,
         username: values.username,
         email: values.email,
         createdAt: serverTimestamp(),
         avatarUrl: `https://i.pravatar.cc/150?u=${firebaseUser.uid}`,
       });
+      
+      // Add user to general community members
+      const memberRef = doc(firestore, 'communities', 'general', 'members', firebaseUser.uid);
+      batch.set(memberRef, {
+        userId: firebaseUser.uid,
+        username: values.username,
+        joinedAt: serverTimestamp(),
+      });
+      
+      // Increment general community member count
+      const communityRef = doc(firestore, 'communities', 'general');
+      batch.update(communityRef, {
+        memberCount: increment(1)
+      });
+      
+      await batch.commit();
 
       toast({
         title: 'Account Created!',

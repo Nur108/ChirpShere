@@ -7,7 +7,7 @@ import { CommentItem } from './comment-item';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
 import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, orderBy, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, increment, orderBy, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 
@@ -26,10 +26,15 @@ export function CommentSection({ postId }: CommentSectionProps) {
   const { toast } = useToast();
   
   const commentsQuery = useMemoFirebase(
-    () => firestore ? query(collection(firestore, 'comments'), where('postId', '==', postId), orderBy('createdAt', 'desc')) : null,
+    () => firestore ? query(collection(firestore, 'posts', postId, 'comments'), orderBy('createdAt', 'desc')) : null,
     [firestore, postId]
   );
-  const { data: postComments, isLoading } = useCollection<CommentType>(commentsQuery);
+  const { data: postComments, isLoading, error: commentsError } = useCollection<CommentType>(commentsQuery);
+
+  // Log any errors for debugging
+  if (commentsError) {
+    console.error('Comments loading error:', commentsError);
+  }
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<{comment: string}>();
   
@@ -37,17 +42,22 @@ export function CommentSection({ postId }: CommentSectionProps) {
     if (!firestore || !user) return;
 
     try {
-        await addDoc(collection(firestore, 'comments'), {
+        await addDoc(collection(firestore, 'posts', postId, 'comments'), {
             content: data.comment,
             authorId: user.uid,
             authorName: user.displayName || user.email,
             authorAvatarUrl: user.photoURL,
-            postId: postId,
             parentId: null,
             createdAt: serverTimestamp(),
             upvotes: 0,
             downvotes: 0,
         });
+        
+        // Update post comment count
+        await updateDoc(doc(firestore, 'posts', postId), {
+            commentCount: increment(1)
+        });
+        
         reset();
         toast({ title: "Comment posted!" });
     } catch(e) {

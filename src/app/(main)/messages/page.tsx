@@ -1,20 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Send } from 'lucide-react';
+import { Search, Send, Plus, ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { ChatConversation, ChatMessage } from '@/lib/types';
-import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, orderBy, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useUser, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, orderBy, query, where, addDoc, serverTimestamp, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { markMessagesAsRead } from '@/lib/chat-utils';
+import { NewChatDialog } from '@/components/new-chat-dialog';
 
 function formatTimestamp(timestamp: Date | undefined) {
     if (!timestamp) return '';
@@ -29,7 +31,7 @@ function formatTimestamp(timestamp: Date | undefined) {
 
 export default function MessagesPage() {
     const firestore = useFirestore();
-    const { user, isUserLoading } = useAuth();
+    const { user, isUserLoading } = useUser();
     const router = useRouter();
 
     const conversationsQuery = useMemoFirebase(
@@ -44,6 +46,9 @@ export default function MessagesPage() {
     
     const [activeConversation, setActiveConversation] = useState<ChatConversation | null>(null);
     const [newMessage, setNewMessage] = useState('');
+    const [showNewChat, setShowNewChat] = useState(false);
+    const [showMobileChat, setShowMobileChat] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const messagesQuery = useMemoFirebase(
         () => activeConversation ? query(
@@ -60,6 +65,16 @@ export default function MessagesPage() {
         }
     }, [isUserLoading, user, router]);
 
+    useEffect(() => {
+        if (activeConversation && user && firestore) {
+            markMessagesAsRead(firestore, activeConversation.id, user.uid);
+        }
+    }, [activeConversation, user, firestore]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
     if (isUserLoading || !user) {
         return <Skeleton className="h-[calc(100vh-8rem)] w-full" />
     }
@@ -71,23 +86,42 @@ export default function MessagesPage() {
         const messageContent = newMessage.trim();
         setNewMessage('');
 
-        await addDoc(collection(firestore, 'chats', activeConversation.id, 'messages'), {
-            content: messageContent,
-            senderId: user.uid,
-            receiverId: activeConversation.userId,
-            timestamp: serverTimestamp(),
-            isRead: false,
-        });
+        try {
+            const otherUserId = activeConversation.participants.find(id => id !== user.uid);
+            if (!otherUserId) return;
 
-        // In a real app, a cloud function would update the chat document's lastMessage fields
+            await addDoc(collection(firestore, 'chats', activeConversation.id, 'messages'), {
+                content: messageContent,
+                senderId: user.uid,
+                receiverId: otherUserId,
+                timestamp: serverTimestamp(),
+                isRead: false,
+            });
+
+            await updateDoc(doc(firestore, 'chats', activeConversation.id), {
+                lastMessage: messageContent,
+                lastMessageTimestamp: serverTimestamp(),
+                lastMessageSenderId: user.uid,
+                [`unreadCount_${otherUserId}`]: increment(1),
+            });
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setNewMessage(messageContent);
+        }
     }
 
     return (
         <Card className="h-[calc(100vh-8rem)] flex">
-            <div className="w-1/3 border-r flex flex-col">
+            <div className={`w-full md:w-1/3 border-r flex flex-col ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b">
-                    <h1 className="text-xl font-bold">Messages</h1>
-                     <div className="relative mt-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <h1 className="text-xl font-bold">Messages</h1>
+                        <Button size="sm" onClick={() => setShowNewChat(true)}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            New
+                        </Button>
+                    </div>
+                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input placeholder="Search messages..." className="pl-10" />
                     </div>
@@ -98,46 +132,73 @@ export default function MessagesPage() {
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
                     </div>}
-                    {conversations && conversations.map((convo) => (
-                        <button
-                            key={convo.id}
-                            className={cn(
-                                "flex w-full items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors",
-                                activeConversation?.id === convo.id && "bg-muted"
-                            )}
-                            onClick={() => setActiveConversation(convo)}
-                        >
-                            <Avatar>
-                                <AvatarImage src={convo.userAvatar} />
-                                <AvatarFallback>{convo.userName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 overflow-hidden">
-                                <div className="flex justify-between items-center">
-                                    <p className="font-semibold truncate">{convo.userName}</p>
-                                    <p className="text-xs text-muted-foreground">{formatTimestamp(convo.lastMessageTimestamp?.toDate())}</p>
+                    {conversations && conversations.map((convo) => {
+                        const otherUserId = convo.participants.find(id => id !== user.uid);
+                        const otherUserName = otherUserId ? convo.participantNames[otherUserId] : 'Unknown';
+                        const otherUserAvatar = otherUserId ? convo.participantAvatars[otherUserId] : '';
+                        const unreadCount = (convo as any)[`unreadCount_${user.uid}`] || 0;
+                        
+                        return (
+                            <button
+                                key={convo.id}
+                                className={cn(
+                                    "flex w-full items-start gap-3 p-4 text-left hover:bg-muted/50 transition-colors",
+                                    activeConversation?.id === convo.id && "bg-muted"
+                                )}
+                                onClick={() => {
+                                    setActiveConversation(convo);
+                                    setShowMobileChat(true);
+                                }}
+                            >
+                                <Avatar>
+                                    <AvatarImage src={otherUserAvatar} />
+                                    <AvatarFallback>{otherUserName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 overflow-hidden">
+                                    <div className="flex justify-between items-center">
+                                        <p className="font-semibold truncate">{otherUserName}</p>
+                                        <p className="text-xs text-muted-foreground">{formatTimestamp(convo.lastMessageTimestamp?.toDate())}</p>
+                                    </div>
+                                    <div className="flex justify-between items-start">
+                                        <p className="text-sm text-muted-foreground truncate">{convo.lastMessage}</p>
+                                        {unreadCount > 0 && (
+                                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex justify-between items-start">
-                                    <p className="text-sm text-muted-foreground truncate">{convo.lastMessage}</p>
-                                    {convo.unreadCount > 0 && (
-                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold">
-                                            {convo.unreadCount}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </button>
-                    ))}
+                            </button>
+                        );
+                    })}
                 </ScrollArea>
             </div>
-            <div className="w-2/3 flex flex-col">
+            <div className={`w-full md:w-2/3 flex flex-col ${!showMobileChat ? 'hidden md:flex' : 'flex'}`}>
                 {activeConversation ? (
                     <>
                         <div className="p-4 border-b flex items-center gap-3">
-                            <Avatar>
-                                <AvatarImage src={activeConversation.userAvatar} />
-                                <AvatarFallback>{activeConversation.userName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <h2 className="text-lg font-semibold">{activeConversation.userName}</h2>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="md:hidden"
+                                onClick={() => setShowMobileChat(false)}
+                            >
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            {(() => {
+                                const otherUserId = activeConversation.participants.find(id => id !== user.uid);
+                                const otherUserName = otherUserId ? activeConversation.participantNames[otherUserId] : 'Unknown';
+                                const otherUserAvatar = otherUserId ? activeConversation.participantAvatars[otherUserId] : '';
+                                return (
+                                    <>
+                                        <Avatar>
+                                            <AvatarImage src={otherUserAvatar} />
+                                            <AvatarFallback>{otherUserName.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <h2 className="text-lg font-semibold">{otherUserName}</h2>
+                                    </>
+                                );
+                            })()}
                         </div>
                         <ScrollArea className="flex-1 p-4">
                             <div className="flex flex-col gap-4">
@@ -162,6 +223,7 @@ export default function MessagesPage() {
                                         </div>
                                     )
                                 })}
+                                <div ref={messagesEndRef} />
                             </div>
                         </ScrollArea>
                         <div className="p-4 border-t">
@@ -184,6 +246,18 @@ export default function MessagesPage() {
                     </div>
                 )}
             </div>
+            <NewChatDialog
+                open={showNewChat}
+                onOpenChange={setShowNewChat}
+                currentUser={user}
+                onConversationCreated={(conversationId) => {
+                    // Find the conversation in the list and set it as active
+                    const conversation = conversations?.find(c => c.id === conversationId);
+                    if (conversation) {
+                        setActiveConversation(conversation);
+                    }
+                }}
+            />
         </Card>
     );
 }
